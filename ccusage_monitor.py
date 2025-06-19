@@ -444,8 +444,8 @@ def main():
         print('\033[?25l', end='', flush=True)  # Hide cursor
         
         while True:
-            # Move cursor to top without clearing
-            print('\033[H', end='', flush=True)
+            # Clear screen and move cursor to top
+            print('\033[2J\033[H', end='', flush=True)
             
             data = run_ccusage(getattr(args, 'per_project', False), args.project)
             if not data or 'blocks' not in data:
@@ -598,9 +598,6 @@ def main():
             # Status line - compact
             current_time_str = datetime.now().strftime("%H:%M:%S")
             print(f"{gray}{current_time_str} | Ctrl+C to exit{reset}")
-            
-            # Clear any remaining lines below to prevent artifacts
-            print('\033[J', end='', flush=True)
             
             time.sleep(1)
             

@@ -349,11 +349,23 @@ Share your experience to help improve the monitoring tool:
 
 ## 🙏 Acknowledgments
 
-This tool builds upon the excellent [ccusage](https://github.com/ryoppippi/ccusage) by [@ryoppippi](https://github.com/ryoppippi), adding a real-time monitoring interface with visual progress bars, burn rate calculations, and predictive analytics.
+This enhanced version builds upon excellent work from the community:
 
+### 🎯 Original Projects
+- **[ccusage](https://github.com/ryoppippi/ccusage)** by [@ryoppippi](https://github.com/ryoppippi) - Essential CLI tool for Claude usage data
+- **[Claude Code Usage Monitor](https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor)** by [@Maciek-roboblog](https://github.com/Maciek-roboblog) - Original real-time monitoring interface
+
+### ✨ Enhanced Features Added
+- 📁 **Project identification** - Shows which Claude session is being monitored
+- 💰 **Fixed cost calculation** - Accurate cumulative daily spending tracking  
+- 🧙‍♂️ **Interactive setup wizard** - Complete configuration with persistent settings
+- 🎹 **Real-time controls** - Modify settings without restarting (`s`/`m`/`q` keys)
+- 🔍 **Enhanced session detection** - Better multi-project support
+
+### 🛠️ Technical Foundation
 - 🏗️ Built for monitoring [Claude Code](https://claude.ai/code) token usage
 - 🔧 Uses [ccusage](https://www.npmjs.com/package/ccusage) for data retrieval
-- 💭 Inspired by the need for better token usage visibility
+- 💡 Enhanced with project detection and cost tracking improvements
 
 ---
 
