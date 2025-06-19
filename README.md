@@ -4,9 +4,38 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com)
 
-A comprehensive real-time terminal monitoring suite for Claude AI token usage. Features both simple monitoring and interactive setup with project identification, accurate daily cost tracking, and advanced session management.
+A comprehensive real-time terminal monitoring suite for Claude AI token usage. Features both simple monitoring and interactive setup with **project identification**, **accurate daily cost tracking**, and **advanced session management**.
 
-![Claude Token Monitor Screenshot](doc/sc.png)
+## 🆕 What's NEW in Enhanced Version?
+
+This enhanced version builds upon the excellent foundation by **[@ryoppippi](https://github.com/ryoppippi)** (ccusage) and **[@Maciek-roboblog](https://github.com/Maciek-roboblog)** (original monitor), adding:
+
+```
+CLAUDE CODE MONITOR
+===================
+
+🤖 Model: Opus 4 | 📁 Project: Claude-Code-Usage-Monitor  ← NEW: Project identification
+
+📊 Tokens: [█████████░░░░░░] 66%
+⏳ Reset:  [███░░░░░░░░░░░░] 3h 40m
+
+🎯 92,715/140,000 (47,285 left)
+🔥 446.6 tok/min ⚡
+
+💰 Session: $146.36
+📅 Today:   $146.36  ← NEW: Fixed daily cost (was showing $0.00)
+📈 Rate:    $42.33/hr
+
+🏁 End: 12:04 | 🔄 Reset: 14:00
+```
+
+### ✨ Key Enhancements Added:
+- **📁 Project identification** - Shows which Claude session/project is active
+- **💰 Fixed daily cost calculation** - Accurate cumulative spending (was broken)
+- **🧙‍♂️ Interactive setup wizard** - Complete configuration with persistent settings
+- **🎹 Live controls** - Press `s` (settings), `m` (modify), `q` (quit) during monitoring
+- **🔧 Better session detection** - Enhanced multi-project support
+- **✨ Clean display** - Fixed overlapping text issues
 
 ---
 
@@ -322,14 +351,23 @@ Contributions are welcome! Feel free to:
 - 🔧 Submit pull requests
 - 📚 Improve documentation
 
-### 🆕 What's New in Enhanced Version
+### 🆕 Enhanced Version Improvements
 
-**Recent Improvements:**
-- ✅ **Fixed daily cost calculation** - Now shows accurate cumulative spending
-- ✅ **Added project identification** - Displays which session is being monitored  
-- ✅ **Interactive setup wizard** - Complete configuration with persistent settings
-- ✅ **Real-time settings control** - Modify preferences without restarting
-- ✅ **Enhanced session detection** - Better multi-project support
+**What We Built on Top of the Original:**
+
+*Original by [@ryoppippi](https://github.com/ryoppippi) + [@Maciek-roboblog](https://github.com/Maciek-roboblog):*
+- ✅ **ccusage CLI tool** - Core Claude usage data extraction
+- ✅ **Real-time monitoring** - Visual progress bars and burn rate tracking
+- ✅ **Multiple plan support** - Pro, Max5, Max20 detection
+- ✅ **Terminal interface** - Clean colorful display
+
+*NEW in Enhanced Version:*
+- 🆕 **Project identification** - Shows which Claude session/project is active
+- 🆕 **Fixed daily cost calculation** - Accurate cumulative spending (was broken/showing $0.00)
+- 🆕 **Interactive setup wizard** - Complete configuration with persistent settings  
+- 🆕 **Live settings control** - Press `s`/`m`/`q` to modify without restarting
+- 🆕 **Enhanced session detection** - Better multi-project workflow support
+- 🆕 **Clean display fixes** - Resolved text overlapping issues
 
 ### 📊 Help Us Improve
 
@@ -349,23 +387,30 @@ Share your experience to help improve the monitoring tool:
 
 ## 🙏 Acknowledgments
 
-This enhanced version builds upon excellent work from the community:
+This enhanced version stands on the shoulders of amazing community work:
 
-### 🎯 Original Projects
-- **[ccusage](https://github.com/ryoppippi/ccusage)** by [@ryoppippi](https://github.com/ryoppippi) - Essential CLI tool for Claude usage data
-- **[Claude Code Usage Monitor](https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor)** by [@Maciek-roboblog](https://github.com/Maciek-roboblog) - Original real-time monitoring interface
+### 🎯 Original Foundation (What We Built Upon)
+- **[ccusage](https://github.com/ryoppippi/ccusage)** by [@ryoppippi](https://github.com/ryoppippi)
+  - 🔧 Core CLI tool for extracting Claude usage data from local files
+  - 📊 JSON output format for programmatic access
+  - 💾 Essential foundation that makes monitoring possible
 
-### ✨ Enhanced Features Added
-- 📁 **Project identification** - Shows which Claude session is being monitored
-- 💰 **Fixed cost calculation** - Accurate cumulative daily spending tracking  
-- 🧙‍♂️ **Interactive setup wizard** - Complete configuration with persistent settings
-- 🎹 **Real-time controls** - Modify settings without restarting (`s`/`m`/`q` keys)
-- 🔍 **Enhanced session detection** - Better multi-project support
+- **[Claude Code Usage Monitor](https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor)** by [@Maciek-roboblog](https://github.com/Maciek-roboblog)
+  - 📈 Original real-time monitoring interface with progress bars
+  - 🎨 Beautiful terminal UI with colors and visual indicators
+  - ⚡ Burn rate calculations and token limit detection
+  - 🔮 Predictive analytics for session management
 
-### 🛠️ Technical Foundation
-- 🏗️ Built for monitoring [Claude Code](https://claude.ai/code) token usage
-- 🔧 Uses [ccusage](https://www.npmjs.com/package/ccusage) for data retrieval
-- 💡 Enhanced with project detection and cost tracking improvements
+### 🆕 Our Enhanced Contributions
+- **📁 Project identification** - Auto-detects and displays active Claude project/session
+- **💰 Fixed daily cost tracking** - Corrected broken calculation (was showing $0.00)
+- **🧙‍♂️ Interactive setup wizard** - Complete configuration with persistent settings
+- **🎹 Live controls** - Real-time settings modification (`s`/`m`/`q` keys)
+- **🔧 Enhanced session detection** - Better support for multi-project workflows
+- **✨ Display improvements** - Fixed text overlapping and visual artifacts
+
+### 🌟 Combined Result
+The original excellent work + our enhancements = A comprehensive monitoring suite that's both powerful and user-friendly for Claude Code users working across multiple projects.
 
 ---
 
