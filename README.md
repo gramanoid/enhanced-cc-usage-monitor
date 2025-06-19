@@ -1,10 +1,10 @@
-# 🎯 Claude Code Usage Monitor
+# 🎯 Enhanced Claude Code Usage Monitor
 
 [![Python Version](https://img.shields.io/badge/python-3.6+-blue.svg)](https://python.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com)
 
-A beautiful real-time terminal monitoring tool for Claude AI token usage. Track your token consumption, burn rate, and get predictions about when you'll run out of tokens.
+A comprehensive real-time terminal monitoring suite for Claude AI token usage. Features both simple monitoring and interactive setup with project identification, accurate daily cost tracking, and advanced session management.
 
 ![Claude Token Monitor Screenshot](doc/sc.png)
 
@@ -41,15 +41,23 @@ A beautiful real-time terminal monitoring tool for Claude AI token usage. Track 
 
 ## ✨ Features
 
-- **🔄 Real-time monitoring** - Updates every 3 seconds with smooth refresh
-- **📊 Visual progress bars** - Beautiful color-coded token and time progress bars
-- **🔮 Smart predictions** - Calculates when tokens will run out based on current burn rate
-- **🤖 Auto-detection** - Automatically switches to custom max when Pro limit is exceeded
-- **📋 Multiple plan support** - Works with Pro, Max5, Max20, and auto-detect plans
-- **⚠️ Warning system** - Alerts when tokens exceed limits or will deplete before session reset
-- **💼 Professional UI** - Clean, colorful terminal interface with emojis
-- **✨ No screen flicker** - Smooth updates without clearing the entire screen
-- **⏰ Customizable reset times** - Set your own token reset schedule
+### 🚀 Core Monitoring
+- **🔄 Real-time tracking** - Updates every 1-3 seconds with smooth refresh
+- **📊 Visual progress bars** - Color-coded token and time progress indicators
+- **🔮 Smart predictions** - Calculates when tokens will run out based on burn rate
+- **📁 Project identification** - Shows which project/session is being monitored
+- **💰 Accurate cost tracking** - Cumulative daily costs with session breakdowns
+
+### 🎯 Multiple Interfaces
+- **⚡ Simple Monitor** (`ccusage_monitor.py`) - Quick, lightweight monitoring
+- **🧙‍♂️ Interactive Setup** (`ccusage_monitor_interactive.py`) - Full wizard with persistent settings
+- **🔧 Real-time controls** - Press `s` to view settings, `m` to modify, `q` to quit
+
+### 🤖 Intelligence & Automation
+- **📋 Multi-plan support** - Pro, Max5, Max20, and auto-detect modes
+- **🔍 Auto-detection** - Finds current active sessions and project paths
+- **⚙️ Persistent settings** - Save preferences and reuse across sessions
+- **⚠️ Smart warnings** - Token, cost, and time-based alerts
 
 ---
 
@@ -71,29 +79,46 @@ A beautiful real-time terminal monitoring tool for Claude AI token usage. Track 
 
 ```bash
 # Clone the repository
-git clone https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor.git
-cd Claude-Code-Usage-Monitor
+git clone https://github.com/gramanoid/enhanced-cc-usage-monitor.git
+cd enhanced-cc-usage-monitor
 
-# Make the script executable
-chmod +x ccusage_monitor.py
+# Make scripts executable
+chmod +x ccusage_monitor.py ccusage_monitor_interactive.py
 
-# Run the monitor
+# Quick start - simple monitor
 ./ccusage_monitor.py
+
+# OR - Interactive setup with full features
+./ccusage_monitor_interactive.py
 ```
 
 ---
 
 ## 📖 Usage
 
-### Basic Usage
+### 🎯 Two Ways to Monitor
 
-Run with default settings (Pro plan - 7,000 tokens):
-
+#### ⚡ Quick Monitor (Simple)
 ```bash
+# Basic monitoring with project detection
 ./ccusage_monitor.py
+
+# With custom plan
+./ccusage_monitor.py --plan max5
 ```
 
-> **💡 Smart Detection**: When tokens exceed the Pro limit, the monitor automatically switches to custom_max mode and displays a notification.
+#### 🧙‍♂️ Interactive Monitor (Full Features)
+```bash
+# Complete setup wizard with persistent settings
+./ccusage_monitor_interactive.py
+```
+
+The interactive version includes:
+- 🔍 Active session detection
+- ⚙️ Persistent configuration 
+- 🎨 Customizable display options
+- 🚨 Advanced alert settings
+- 🎹 Live settings modification (`s` = show, `m` = modify, `q` = quit)
 
 ### Specify Your Plan
 
@@ -190,23 +215,26 @@ The monitor calculates burn rate based on all sessions from the last hour:
 
 ## 🔧 Advanced Features
 
-### Auto-Detection Mode
+### 📁 Project Identification
+- **Auto-detects** which Claude project/session is currently active
+- **Displays project name** in monitor header
+- **Multiple session handling** for complex workflows
 
-When using `--plan custom_max`, the monitor:
+### 💰 Enhanced Cost Tracking
+- **Cumulative daily costs** - Fixed calculation shows total spent today
+- **Session cost breakdown** - Individual session spending
+- **Real-time burn rate** - Cost per hour predictions
 
-1. 🔍 Scans all previous session blocks
-2. 📈 Finds the highest token count used
-3. ⚙️ Sets that as your limit automatically
-4. ✅ Perfect for users with varying token limits
+### 🎹 Interactive Controls (Interactive Version)
+- **`s`** - Show current settings without stopping monitor
+- **`m`** - Modify settings on-the-fly with guided menus  
+- **`q`** - Quit gracefully
+- **Persistent settings** - Configurations saved between sessions
 
-### Smart Pro Plan Switching
-
-When using the default Pro plan:
-
-- 🔍 Monitor detects when usage exceeds 7,000 tokens
-- 🔄 Automatically switches to custom_max mode
-- 📢 Shows notification of the switch
-- ▶️ Continues monitoring with the new limit
+### 🤖 Auto-Detection Features
+- **Plan detection** - Automatically finds appropriate token limits
+- **Session discovery** - Identifies all active Claude sessions
+- **Smart switching** - Upgrades limits when exceeded
 
 ---
 
@@ -248,36 +276,39 @@ printf '\033[?25h'
 
 ## 🚀 Example Usage Scenarios
 
-### Morning Developer
+### 🌅 First Time User
 ```bash
-# Start work at 9 AM daily
-./ccusage_monitor.py --reset-hour 9
+# Interactive setup - recommended for new users
+./ccusage_monitor_interactive.py
+# Walks through session detection, plan selection, and preferences
 ```
 
-### Night Owl Coder
+### ⚡ Quick Daily Check
 ```bash
-# Often work past midnight
-./ccusage_monitor.py --reset-hour 0
-```
-
-### Heavy User with Variable Limits
-```bash
-# Let the monitor figure out your limits
+# Simple monitoring with auto-detection
 ./ccusage_monitor.py --plan custom_max
+# Shows project name and accurate daily costs
 ```
 
-### Quick Check with Default Settings
+### 🌍 International Developer
 ```bash
-# Just run it!
-./ccusage_monitor.py
+# Interactive setup with timezone selection
+./ccusage_monitor_interactive.py
+# Includes built-in timezone picker and persistent settings
 ```
 
-### International User
+### 🔧 Power User with Multiple Projects
 ```bash
-# Use your local timezone
-./ccusage_monitor.py --timezone America/New_York
-./ccusage_monitor.py --timezone Asia/Singapore
-./ccusage_monitor.py --timezone Australia/Sydney
+# Quick monitor for specific workflows
+./ccusage_monitor.py --timezone US/Pacific --reset-hour 9
+# Project identification shows which session is active
+```
+
+### 🎯 Cost-Conscious Monitoring
+```bash
+# Interactive with cost alerts
+./ccusage_monitor_interactive.py
+# Set custom cost thresholds and daily spending limits
 ```
 
 ---
@@ -291,17 +322,22 @@ Contributions are welcome! Feel free to:
 - 🔧 Submit pull requests
 - 📚 Improve documentation
 
-### 📊 Help Us Improve Token Limit Detection
+### 🆕 What's New in Enhanced Version
 
-We're collecting data about actual token limits to improve the auto-detection feature. If you're using Claude and your tokens exceeded the standard limits, please share your experience in [Issue #1](https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor/issues/1):
+**Recent Improvements:**
+- ✅ **Fixed daily cost calculation** - Now shows accurate cumulative spending
+- ✅ **Added project identification** - Displays which session is being monitored  
+- ✅ **Interactive setup wizard** - Complete configuration with persistent settings
+- ✅ **Real-time settings control** - Modify preferences without restarting
+- ✅ **Enhanced session detection** - Better multi-project support
 
-**What to share:**
-- Your subscription type (Pro, Teams, Enterprise)
-- The maximum tokens you reached (custom_max value)
-- When the limit was exceeded
-- Any patterns you've noticed
+### 📊 Help Us Improve
 
-This data helps us better understand token allocation across different subscription tiers and improve the monitoring tool for everyone.
+Share your experience to help improve the monitoring tool:
+- 🐛 Report issues with session detection
+- 💡 Suggest new monitoring features  
+- 📈 Share cost tracking use cases
+- 🔧 Contribute improvements to project identification
 
 ---
 
@@ -325,6 +361,6 @@ This tool builds upon the excellent [ccusage](https://github.com/ryoppippi/ccusa
 
 **⭐ Star this repo if you find it useful! ⭐**
 
-[Report Bug](https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor/issues) • [Request Feature](https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor/issues) • [Contribute](https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor/pulls)
+[Report Bug](https://github.com/gramanoid/enhanced-cc-usage-monitor/issues) • [Request Feature](https://github.com/gramanoid/enhanced-cc-usage-monitor/issues) • [Contribute](https://github.com/gramanoid/enhanced-cc-usage-monitor/pulls)
 
 </div>

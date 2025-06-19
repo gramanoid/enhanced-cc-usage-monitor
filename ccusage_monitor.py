@@ -10,10 +10,16 @@ import argparse
 import pytz
 
 
-def run_ccusage():
+def run_ccusage(per_project=False, project_filter=None):
     """Execute ccusage blocks --json command and return parsed JSON data."""
     try:
-        result = subprocess.run(['ccusage', 'blocks', '--json'], capture_output=True, text=True, check=True)
+        cmd = ['ccusage', 'blocks', '--json']
+        if per_project:
+            cmd.append('--per-project')
+        if project_filter:
+            cmd.extend(['--project', project_filter])
+        
+        result = subprocess.run(cmd, capture_output=True, text=True, check=True)
         return json.loads(result.stdout)
     except subprocess.CalledProcessError as e:
         print(f"Error running ccusage: {e}")
@@ -21,6 +27,70 @@ def run_ccusage():
     except json.JSONDecodeError as e:
         print(f"Error parsing JSON: {e}")
         return None
+
+
+def get_session_info():
+    """Get session information including project paths."""
+    try:
+        result = subprocess.run(['ccusage', 'session', '--json'], capture_output=True, text=True, check=True)
+        return json.loads(result.stdout)
+    except subprocess.CalledProcessError as e:
+        print(f"Error running ccusage session: {e}")
+        return None
+    except json.JSONDecodeError as e:
+        print(f"Error parsing session JSON: {e}")
+        return None
+
+
+def parse_session_id_to_project_path(session_id):
+    """Convert session ID to readable project path."""
+    if not session_id or not session_id.startswith('-'):
+        return "Unknown Project"
+    
+    # Remove leading dash
+    path_parts = session_id[1:].split('-')
+    
+    # Handle special encoding cases
+    project_path = '/'.join(path_parts)
+    
+    # Clean up known patterns
+    project_path = project_path.replace('home/alexgrama/GitHome/', '~/GitHome/')
+    project_path = project_path.replace('home/alexgrama/', '~/')
+    project_path = project_path.replace('/personal/', '/_personal/')
+    project_path = project_path.replace('/work/', '/_work/')
+    project_path = project_path.replace('/active/', '/_active/')
+    
+    # Get just the project name (last part of path)
+    if project_path.count('/') > 0:
+        project_name = project_path.split('/')[-1]
+        if len(project_name) > 20:
+            project_name = project_name[:17] + "..."
+        return project_name
+    
+    return project_path
+
+
+def get_current_project_info():
+    """Get information about the currently active project."""
+    session_data = get_session_info()
+    if not session_data or 'sessions' not in session_data:
+        return None
+    
+    # Find sessions with recent activity (today)
+    today = datetime.now().strftime("%Y-%m-%d")
+    recent_sessions = [s for s in session_data['sessions'] if s.get('lastActivity') == today]
+    
+    if recent_sessions:
+        # Get the session with highest cost (most active)
+        most_active = max(recent_sessions, key=lambda x: x.get('totalCost', 0))
+        project_name = parse_session_id_to_project_path(most_active['sessionId'])
+        return {
+            'project_name': project_name,
+            'session_id': most_active['sessionId'],
+            'total_cost': most_active.get('totalCost', 0)
+        }
+    
+    return None
 
 
 def format_time(minutes):
@@ -34,7 +104,7 @@ def format_time(minutes):
     return f"{hours}h {mins}m"
 
 
-def create_token_progress_bar(percentage, width=50):
+def create_token_progress_bar(percentage, width=15):
     """Create a token usage progress bar with bracket style."""
     filled = int(width * percentage / 100)
     
@@ -47,10 +117,10 @@ def create_token_progress_bar(percentage, width=50):
     red = '\033[91m'    # Bright red
     reset = '\033[0m'
     
-    return f"🟢 [{green}{green_bar}{red}{red_bar}{reset}] {percentage:.1f}%"
+    return f"[{green}{green_bar}{red}{red_bar}{reset}] {percentage:.0f}%"
 
 
-def create_time_progress_bar(elapsed_minutes, total_minutes, width=50):
+def create_time_progress_bar(elapsed_minutes, total_minutes, width=15):
     """Create a time progress bar showing time until reset."""
     if total_minutes <= 0:
         percentage = 0
@@ -69,7 +139,7 @@ def create_time_progress_bar(elapsed_minutes, total_minutes, width=50):
     reset = '\033[0m'
     
     remaining_time = format_time(max(0, total_minutes - elapsed_minutes))
-    return f"⏰ [{blue}{blue_bar}{red}{red_bar}{reset}] {remaining_time}"
+    return f"[{blue}{blue_bar}{red}{red_bar}{reset}] {remaining_time}"
 
 
 def print_header():
@@ -78,11 +148,8 @@ def print_header():
     blue = '\033[94m'
     reset = '\033[0m'
     
-    # Sparkle pattern
-    sparkles = f"{cyan}✦ ✧ ✦ ✧ {reset}"
-    
-    print(f"{sparkles}{cyan}CLAUDE TOKEN MONITOR{reset} {sparkles}")
-    print(f"{blue}{'=' * 60}{reset}")
+    print(f"{cyan}CLAUDE CODE MONITOR{reset}")
+    print(f"{blue}{'=' * 19}{reset}")
     print()
 
 
@@ -155,6 +222,57 @@ def calculate_hourly_burn_rate(blocks, current_time):
     return total_tokens / 60 if total_tokens > 0 else 0
 
 
+def calculate_hourly_cost_burn_rate(blocks, current_time):
+    """Calculate cost burn rate in USD per hour based on all sessions in the last hour."""
+    one_hour_ago = current_time - timedelta(hours=1)
+    total_cost = 0
+    
+    for block in blocks:
+        # Parse start time
+        start_time_str = block.get('startTime')
+        if not start_time_str:
+            continue
+            
+        start_time = datetime.fromisoformat(start_time_str.replace('Z', '+00:00'))
+        
+        # Skip if session started after current time
+        if start_time > current_time:
+            continue
+            
+        # Determine session end time
+        if block.get('isActive', False):
+            session_actual_end = current_time
+        else:
+            actual_end_str = block.get('actualEndTime')
+            if actual_end_str:
+                session_actual_end = datetime.fromisoformat(actual_end_str.replace('Z', '+00:00'))
+            else:
+                session_actual_end = current_time
+        
+        # Check if session overlaps with the last hour
+        if session_actual_end < one_hour_ago:
+            continue
+            
+        # Calculate how much of this session falls within the last hour
+        session_start_in_hour = max(start_time, one_hour_ago)
+        session_end_in_hour = min(session_actual_end, current_time)
+        
+        if session_end_in_hour <= session_start_in_hour:
+            continue
+            
+        # Calculate portion of cost incurred in the last hour
+        total_session_duration = (session_actual_end - start_time).total_seconds() / 60
+        hour_duration = (session_end_in_hour - session_start_in_hour).total_seconds() / 60
+        
+        if total_session_duration > 0:
+            session_cost = block.get('costUSD', 0)
+            cost_in_hour = session_cost * (hour_duration / total_session_duration)
+            total_cost += cost_in_hour
+    
+    # Return cost per hour
+    return total_cost
+
+
 def get_next_reset_time(current_time, custom_reset_hour=None, timezone_str='Europe/Warsaw'):
     """Calculate next token reset time based on fixed 5-hour intervals.
     Default reset times in specified timezone: 04:00, 09:00, 14:00, 18:00, 23:00
@@ -222,6 +340,10 @@ def parse_args():
                         help='Change the reset hour (0-23) for daily limits')
     parser.add_argument('--timezone', type=str, default='Europe/Warsaw',
                         help='Timezone for reset times (default: Europe/Warsaw). Examples: US/Eastern, Asia/Tokyo, UTC')
+    parser.add_argument('--per-project', action='store_true',
+                        help='Show per-project session blocks instead of aggregated')
+    parser.add_argument('--project', type=str,
+                        help='Filter by project path (supports partial matching)')
     return parser.parse_args()
 
 
@@ -246,13 +368,69 @@ def get_token_limit(plan, blocks=None):
     return limits.get(plan, 7000)
 
 
+def calculate_daily_cost(blocks, current_time, timezone_str='Europe/Warsaw'):
+    """Calculate total cost spent today (cumulative for the current day)."""
+    # Convert to specified timezone
+    try:
+        target_tz = pytz.timezone(timezone_str)
+    except pytz.exceptions.UnknownTimeZoneError:
+        target_tz = pytz.timezone('Europe/Warsaw')
+    
+    # Get start of current day in target timezone
+    if current_time.tzinfo is not None:
+        local_time = current_time.astimezone(target_tz)
+    else:
+        local_time = target_tz.localize(current_time)
+    
+    start_of_day = local_time.replace(hour=0, minute=0, second=0, microsecond=0)
+    
+    total_cost = 0
+    
+    for block in blocks:
+        start_time_str = block.get('startTime')
+        if not start_time_str:
+            continue
+            
+        start_time = datetime.fromisoformat(start_time_str.replace('Z', '+00:00'))
+        
+        # Convert session start time to target timezone for comparison
+        if start_time.tzinfo is not None:
+            session_local_time = start_time.astimezone(target_tz)
+        else:
+            session_local_time = target_tz.localize(start_time)
+        
+        # Count all costs from sessions that had any activity today
+        # (sessions that started today OR sessions that were active today)
+        session_end_time = start_time
+        if block.get('isActive', False):
+            # For active sessions, they're definitely active today
+            session_end_time = current_time
+        else:
+            actual_end_str = block.get('actualEndTime')
+            if actual_end_str:
+                session_end_time = datetime.fromisoformat(actual_end_str.replace('Z', '+00:00'))
+        
+        # Convert end time to local timezone
+        if session_end_time.tzinfo is not None:
+            session_end_local = session_end_time.astimezone(target_tz)
+        else:
+            session_end_local = target_tz.localize(session_end_time)
+        
+        # Include if session started today OR ended today (covers sessions spanning midnight)
+        if (session_local_time.date() == local_time.date() or 
+            session_end_local.date() == local_time.date()):
+            total_cost += block.get('costUSD', 0)
+    
+    return total_cost
+
+
 def main():
     """Main monitoring loop."""
     args = parse_args()
     
     # For 'custom_max' plan, we need to get data first to determine the limit
     if args.plan == 'custom_max':
-        initial_data = run_ccusage()
+        initial_data = run_ccusage(getattr(args, 'per_project', False), args.project)
         if initial_data and 'blocks' in initial_data:
             token_limit = get_token_limit(args.plan, initial_data['blocks'])
         else:
@@ -269,7 +447,7 @@ def main():
             # Move cursor to top without clearing
             print('\033[H', end='', flush=True)
             
-            data = run_ccusage()
+            data = run_ccusage(getattr(args, 'per_project', False), args.project)
             if not data or 'blocks' not in data:
                 print("Failed to get usage data")
                 continue
@@ -287,6 +465,22 @@ def main():
             
             # Extract data from active block
             tokens_used = active_block.get('totalTokens', 0)
+            cost_usd = active_block.get('costUSD', 0)
+            
+            # Get model info
+            models = active_block.get('models', [])
+            # Filter out synthetic models and get the first real model
+            real_models = [m for m in models if '<synthetic>' not in m]
+            model_name = real_models[0] if real_models else 'unknown'
+            # Shorten model name for display
+            if 'opus-4' in model_name:
+                model_display = 'Opus 4'
+            elif 'sonnet' in model_name:
+                model_display = 'Sonnet'
+            elif 'haiku' in model_name:
+                model_display = 'Haiku'
+            else:
+                model_display = model_name.split('-')[1] if '-' in model_name else model_name
             
             # Check if tokens exceed limit and switch to custom_max if needed
             if tokens_used > token_limit and args.plan == 'pro':
@@ -313,6 +507,7 @@ def main():
             
             # Calculate burn rate from ALL sessions in the last hour
             burn_rate = calculate_hourly_burn_rate(data['blocks'], current_time)
+            cost_burn_rate = calculate_hourly_cost_burn_rate(data['blocks'], current_time)
             
             # Reset time calculation - use fixed schedule or custom hour with timezone
             reset_time = get_next_reset_time(current_time, args.reset_hour, args.timezone)
@@ -339,22 +534,41 @@ def main():
             gray = '\033[90m'
             reset = '\033[0m'
             
+            # Calculate daily cost
+            daily_cost = calculate_daily_cost(data['blocks'], current_time, args.timezone)
+            
             # Display header
             print_header()
             
-            # Token Usage section
-            print(f"📊 {white}Token Usage:{reset}    {create_token_progress_bar(usage_percentage)}")
+            # Get current project info
+            project_info = get_current_project_info()
+            
+            # Model info and project info
+            model_line = f"🤖 {white}Model:{reset} {cyan}{model_display}{reset}"
+            if project_info:
+                model_line += f" | 📁 {white}Project:{reset} {cyan}{project_info['project_name']}{reset}"
+            elif hasattr(args, 'per_project') and getattr(args, 'per_project', False):
+                if args.project:
+                    model_line += f" | 📁 {white}Project:{reset} {cyan}{args.project}{reset}"
+                else:
+                    model_line += f" | 📁 {white}Mode:{reset} {cyan}Per-Project{reset}"
+            print(model_line)
             print()
             
-            # Time to Reset section - calculate progress based on time since last reset
-            # Estimate time since last reset (max 5 hours = 300 minutes)
-            time_since_reset = max(0, 300 - minutes_to_reset)
-            print(f"⏳ {white}Time to Reset:{reset}  {create_time_progress_bar(time_since_reset, 300)}")
+            # Progress bars
+            print(f"📊 {white}Tokens:{reset} {create_token_progress_bar(usage_percentage)}")
+            print(f"⏳ {white}Reset:{reset}  {create_time_progress_bar(max(0, 300 - minutes_to_reset), 300)}")
             print()
             
-            # Detailed stats
-            print(f"🎯 {white}Tokens:{reset}         {white}{tokens_used:,}{reset} / {gray}~{token_limit:,}{reset} ({cyan}{tokens_left:,} left{reset})")
-            print(f"🔥 {white}Burn Rate:{reset}      {yellow}{burn_rate:.1f}{reset} {gray}tokens/min{reset}")
+            # Compact stats
+            print(f"🎯 {white}{tokens_used:,}{reset}/{gray}{token_limit:,}{reset} ({cyan}{tokens_left:,}{reset} left)")
+            print(f"🔥 {yellow}{burn_rate:.1f}{reset} tok/min {get_velocity_indicator(burn_rate)}")
+            print()
+            
+            # Cost tracking
+            print(f"💰 {white}Session:{reset} ${green}{cost_usd:.2f}{reset}")
+            print(f"📅 {white}Today:{reset}   ${green}{daily_cost:.2f}{reset}")
+            print(f"📈 {white}Rate:{reset}    ${yellow}{cost_burn_rate:.2f}{reset}/hr")
             print()
             
             # Predictions - convert to configured timezone for display
@@ -367,40 +581,28 @@ def main():
             
             predicted_end_str = predicted_end_local.strftime("%H:%M")
             reset_time_str = reset_time_local.strftime("%H:%M")
-            print(f"🏁 {white}Predicted End:{reset} {predicted_end_str}")
-            print(f"🔄 {white}Token Reset:{reset}   {reset_time_str}")
+            print(f"🏁 {white}End:{reset} {predicted_end_str} | 🔄 {white}Reset:{reset} {reset_time_str}")
             print()
             
-            # Show notification if we switched to custom_max
-            show_switch_notification = False
-            if tokens_used > 7000 and args.plan == 'pro' and token_limit > 7000:
-                show_switch_notification = True
-            
-            # Notification when tokens exceed max limit
-            show_exceed_notification = tokens_used > token_limit
-            
             # Show notifications
-            if show_switch_notification:
-                print(f"🔄 {yellow}Tokens exceeded Pro limit - switched to custom_max ({token_limit:,}){reset}")
-                print()
+            if tokens_used > 7000 and args.plan == 'pro' and token_limit > 7000:
+                print(f"🔄 {yellow}Switched to custom_max{reset}")
             
-            if show_exceed_notification:
-                print(f"🚨 {red}TOKENS EXCEEDED MAX LIMIT! ({tokens_used:,} > {token_limit:,}){reset}")
-                print()
+            if tokens_used > token_limit:
+                print(f"🚨 {red}TOKENS EXCEEDED!{reset}")
             
             # Warning if tokens will run out before reset
             if predicted_end_time < reset_time:
-                print(f"⚠️  {red}Tokens will run out BEFORE reset!{reset}")
-                print()
+                print(f"⚠️  {red}Tokens depleting fast!{reset}")
             
-            # Status line
+            # Status line - compact
             current_time_str = datetime.now().strftime("%H:%M:%S")
-            print(f"⏰ {gray}{current_time_str}{reset} 📝 {cyan}Smooth sailing...{reset} | {gray}Ctrl+C to exit{reset} 🟨")
+            print(f"{gray}{current_time_str} | Ctrl+C to exit{reset}")
             
             # Clear any remaining lines below to prevent artifacts
             print('\033[J', end='', flush=True)
             
-            time.sleep(3)
+            time.sleep(1)
             
     except KeyboardInterrupt:
         # Show cursor before exiting
