@@ -438,19 +438,31 @@ def main():
     else:
         token_limit = get_token_limit(args.plan)
     
+    # Get project info once at startup (doesn't change during session)
+    project_info = get_current_project_info()
+    project_info_refresh_counter = 0
+    
     try:
         # Initial screen clear and hide cursor
         os.system('clear' if os.name == 'posix' else 'cls')
         print('\033[?25l', end='', flush=True)  # Hide cursor
         
         while True:
-            # Clear screen and move cursor to top
-            print('\033[2J\033[H', end='', flush=True)
+            # More robust screen clearing for all terminals
+            os.system('clear' if os.name == 'posix' else 'cls')
+            
+            # Show loading indicator
+            print("🔄 Loading Claude usage data...")
             
             data = run_ccusage(getattr(args, 'per_project', False), args.project)
             if not data or 'blocks' not in data:
-                print("Failed to get usage data")
+                print("❌ Failed to get usage data")
+                print("Make sure you have an active Claude session and ccusage is installed.")
+                time.sleep(3)
                 continue
+            
+            # Clear loading message
+            os.system('clear' if os.name == 'posix' else 'cls')
             
             # Find the active block
             active_block = None
@@ -460,7 +472,9 @@ def main():
                     break
             
             if not active_block:
-                print("No active session found")
+                print("❌ No active Claude session found")
+                print("Please start a Claude Code session and try again.")
+                time.sleep(3)
                 continue
             
             # Extract data from active block
@@ -537,11 +551,14 @@ def main():
             # Calculate daily cost
             daily_cost = calculate_daily_cost(data['blocks'], current_time, args.timezone)
             
+            # Refresh project info every 30 seconds (30 iterations)
+            project_info_refresh_counter += 1
+            if project_info_refresh_counter >= 30:
+                project_info = get_current_project_info()
+                project_info_refresh_counter = 0
+            
             # Display header
             print_header()
-            
-            # Get current project info
-            project_info = get_current_project_info()
             
             # Model info and project info
             model_line = f"🤖 {white}Model:{reset} {cyan}{model_display}{reset}"
